@@ -1,0 +1,60 @@
+---
+title: "kidney boxplot"
+author: "Narayanan Raghupathy"
+date: "3/19/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(tidyr)
+library(tibble)
+```
+```{r}
+kidney_exp = read_tsv("Kidney_data.tsv")
+```
+
+```{r gene}
+gene_id='ENSMUSG00000058793'
+cds2_exp = kidney_exp %>% 
+              filter(locus==gene_id)
+head(cds2_exp)
+```
+
+```{r}
+#cds2_exp %>% 
+#  select(-locus,-notes) %>% separate(File,c("DO_id"),sep="_") 
+cds2_data <- cds2_exp %>% 
+    select(-locus,-notes) %>% 
+    separate(File,c("DO","ID"))  %>%
+    unite("DO_ID",c("DO","ID"))
+#head(cds2_data)
+sample_ids <- cds2_data %>% pull(DO_ID)
+cds2_data <- cds2_data %>% 
+             select(-DO_ID) %>%
+             mutate(total = rowSums(.)) %>% 
+             filter(total >= 100)
+head(cds2_data)
+print(dim(cds2_data))
+#  remove_rownames() %>%
+#  column_to_rownames("DO_ID")
+
+cds2 <- cds2_data %>% mutate(A = replace(A, A<= 0.0, NA),
+                     B = replace(B, B<= 0.0, NA),
+                     C = replace(C, C<= 0.0, NA),
+                     D = replace(D, D<= 0.0, NA),
+                     E = replace(E, E<= 0.0, NA),
+                     F = replace(F, F<= 0.0, NA),
+                     G = replace(G, G<= 0.0, NA),
+                     H = replace(H, H<= 0.0, NA))
+pdf("allele_plot.pdf")
+cds2 %>% 
+  gather('Founder','exp') %>% 
+  ggplot(aes(x=Founder,y=exp))+ geom_boxplot()
+dev.off()
+```
+
+
