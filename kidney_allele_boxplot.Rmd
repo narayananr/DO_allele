@@ -13,9 +13,17 @@ library(readr)
 library(tidyr)
 library(tibble)
 ```
-```{r}
+### Load expression data
+
+It is a big file. It will take while.
+
+```{r load_exp}
 kidney_exp = read_tsv("Kidney_data.tsv")
 ```
+
+### Filter gene of interest
+
+Pull put just one gene's expression.
 
 ```{r gene}
 gene_id='ENSMUSG00000058793'
@@ -24,7 +32,11 @@ cds2_exp = kidney_exp %>%
 head(cds2_exp)
 ```
 
-```{r}
+* pulled out sample ID is incase needed
+* Filtered samples with less than 100 total read counts.
+* replaced 0's with NA's for each allele
+
+```{r filter}
 #cds2_exp %>% 
 #  select(-locus,-notes) %>% separate(File,c("DO_id"),sep="_") 
 cds2_data <- cds2_exp %>% 
@@ -36,12 +48,15 @@ sample_ids <- cds2_data %>% pull(DO_ID)
 cds2_data <- cds2_data %>% 
              select(-DO_ID) %>%
              mutate(total = rowSums(.)) %>% 
-             filter(total >= 100)
+             filter(total >= 10) %>%
+             mutate(numZs = rowSums(. <= 0.0))
 head(cds2_data)
-print(dim(cds2_data))
+#print(dim(cds2_data))
 #  remove_rownames() %>%
 #  column_to_rownames("DO_ID")
+```
 
+```{r make_NAs}
 cds2 <- cds2_data %>% mutate(A = replace(A, A<= 0.0, NA),
                      B = replace(B, B<= 0.0, NA),
                      C = replace(C, C<= 0.0, NA),
@@ -50,11 +65,11 @@ cds2 <- cds2_data %>% mutate(A = replace(A, A<= 0.0, NA),
                      F = replace(F, F<= 0.0, NA),
                      G = replace(G, G<= 0.0, NA),
                      H = replace(H, H<= 0.0, NA))
-pdf("allele_plot.pdf")
+#pdf("allele_plot.pdf")
 cds2 %>% 
   gather('Founder','exp') %>% 
-  ggplot(aes(x=Founder,y=exp))+ geom_boxplot()
-dev.off()
+  ggplot(aes(x=Founder,y=exp))+ geom_boxplot()+geom_jitter(width=0.25)
+#dev.off()
 ```
 
 
